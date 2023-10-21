@@ -1,0 +1,72 @@
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ['main']
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Create dist folder
+        run: |
+          mkdir dist
+          set -eu
+
+          indb="./db.sqlite3"
+          outdir="./dist"
+
+          # for chunked mode, we need to know the database size in bytes beforehand
+          bytes="$(stat --printf="%s" "$indb")"
+          # set chunk size to 10MiB (needs to be a multiple of the `pragma page_size`!)
+          serverChunkSize=$((10 * 1024 * 1024))
+          suffixLength=3
+          rm -f "$outdir/db.sqlite3"*
+          split "$indb" --bytes=$serverChunkSize "$outdir/db.sqlite3." --suffix-length=$suffixLength --numeric-suffixes
+
+          # set request chunk size to match page size
+          requestChunkSize="$(sqlite3 "$indb" 'pragma page_size')"
+
+          # write a json config
+          echo '
+          {
+              "serverMode": "chunked",
+              "requestChunkSize": '$requestChunkSize',
+              "databaseLengthBytes": '$bytes',
+              "serverChunkSize": '$serverChunkSize',
+              "urlPrefix": "db.sqlite3.",
+              "suffixLength": '$suffixLength'
+          }
+          ' > "$outdir/config.json"
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          # Upload dist repository
+          path: './dist'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
