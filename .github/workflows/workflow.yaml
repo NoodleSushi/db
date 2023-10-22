@@ -30,11 +30,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Improve database
+        run: |
+          sqlite3 db.sqlite3 "pragma journal_mode = delete; -- to be able to actually set page size"
+          sqlite3 db.sqlite3 "pragma page_size = 1024; -- trade off of number of requests that need to be made vs overhead."
+          sqlite3 db.sqlite3 "insert into ftstable(ftstable) values ('optimize'); -- for every FTS table you have (if you have any)"
+          sqlite3 db.sqlite3 "insert into ftstable(ftstable) values ('optimize'); -- for every FTS table you have (if you have any)"
       - name: Create dist folder
         run: |
           mkdir dist
           set -eu
-
+      - name: Export database into chunks
+        run: |
           indb="./db.sqlite3"
           outdir="./dist"
 
