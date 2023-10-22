@@ -55,6 +55,9 @@ jobs:
           # set request chunk size to match page size
           requestChunkSize="$(sqlite3 "$indb" 'pragma page_size')"
 
+          # Generate a random integer for cacheBust
+          cacheBust=$(shuf -i 1-1000000 -n 1)
+
           # write a json config
           echo '
           {
@@ -63,6 +66,7 @@ jobs:
               "databaseLengthBytes": '$bytes',
               "serverChunkSize": '$serverChunkSize',
               "urlPrefix": "db.sqlite3.",
+              "cacheBust": $cacheBust,
               "suffixLength": '$suffixLength'
           }
           ' > "$outdir/config.json"
