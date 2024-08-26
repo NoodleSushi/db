@@ -30,6 +30,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Update database
+        run: |
+          pip install PyGithub
+          python ./main.py
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Improve database
         run: |
           sqlite3 db.sqlite3 "pragma journal_mode = delete; -- to be able to actually set page size"
