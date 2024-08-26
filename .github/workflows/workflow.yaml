@@ -35,7 +35,7 @@ jobs:
           pip install PyGithub
           python ./main.py
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
       - name: Improve database
         run: |
           sqlite3 db.sqlite3 "pragma journal_mode = delete; -- to be able to actually set page size"
